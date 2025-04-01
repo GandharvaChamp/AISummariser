@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - AI Summarizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('home') }}" class="nav-logo">
+                <i class="fas fa-brain"></i> AI Summarizer
+            </a>
+            <div class="nav-links">
+                <a href="#" class="nav-link">Home</a>
+                <a href="#about" class="nav-link active">About</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>About Us</h1>
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/karan.jpg') }}" alt="Karan Bajrang Kale" class="team-photo">
+            <div>
+                <h2>Karan Bajrang Kale</h2>
+                <p>Email: kalekaran78@gmail.com, karankale236@nhitm.ac.in</p>
+                <button class="social-button"><a href="https://www.linkedin.com/in/karan-b-kale-ai-ml-dl/">LinkedIn</a></button>
+                <button class="social-button"><a href="https://github.com/KaleKaran?tab=repositories">GitHub</a></button>
+            </div>
+        </div>
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/gandharava.jpg') }}" alt="Gandharava Khedekar" class="team-photo">
+            <div>
+                <h2>Gandharava Khedekar</h2>
+                <p>Email: khedekargandharva2375@gmail.com, gandharavakhedekar236@nhitm.ac.in</p>
+                <button class="social-button"><a href="https://www.linkedin.com/in/gandharva-khedekar/">LinkedIn</a></button>
+                <button class="social-button"><a href="https://github.com/GandharvaChamp">GitHub</a></button>
+            </div>
+        </div>
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/himanshu.jpg') }}" alt="Himanshu Kurkure" class="team-photo">
+            <div>
+                <h2>Himanshu Kurkure</h2>
+                <p>Email: hrk2018@hotmail.com, himanshukurkure236@nhitm.ac.in</p>
+                <button class="social-button"><a href="https://www.linkedin.com/in/himanshu-kurkure-964933282/">LinkedIn</a></button>
+            </div>
+        </div>
+        <div class="team-member">
+            <img src="{{ url_for('static', filename='images/pranay.jpg') }}" alt="Pranay Chauhan" class="team-photo">
+            <div>
+                <h2>Pranay Chauhan</h2>
+                <p>Email: pranaychauhan236@nhitm.ac.in</p>
+            </div>
+        </div>
+        <!-- Add more team members as needed -->
+    </div>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2025 AI Summarizer. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
