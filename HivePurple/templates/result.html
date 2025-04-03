@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summary Result - AI Summarizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.home') }}" class="nav-logo">
+                <i class="fas fa-brain"></i> AI Summarizer
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('main.home') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('main.about') }}" class="nav-link">About</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container result-container">
+        <div class="result-header">
+            <h1><i class="fas fa-check-circle"></i> Summary Result</h1>
+            <a href="{{ url_for('main.home') }}" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Home</a>
+        </div>
+
+        <div class="content-card">
+            <div class="video-section">
+                <div class="thumbnail-container">
+                    <img src="{{ thumbnail_url }}" alt="Content Thumbnail" class="thumbnail">
+                </div>
+                {% if youtube_link %}
+                <div class="video-link">
+                    <a href="{{ youtube_link }}" target="_blank" class="watch-btn">
+                        <i class="fas fa-play-circle"></i> Watch Video
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="summary-section">
+                <h2><i class="fas fa-file-alt"></i> Summary</h2>
+                <div class="summary">
+                    {{ summary | format_content | safe }}
+                </div>
+            </div>
+        </div>
+
+        <div style="display: none;">
+            <span id="images-data">{{ images|tojson|safe }}</span>
+            <span id="video-id">{{ youtube_link.split("v=")[-1].split("&")[0] }}</span>
+            <span id="summary-data">{{ summary|safe }}</span>
+            <span id="transcript-data">{{ transcript|safe }}</span>
+        </div>
+
+        <div class="toggle-container">
+            <label class="toggle-switch">
+                <input type="checkbox" id="chatToggle">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Show Q&A Chat</span>
+        </div>
+
+        <div class="chat-section hidden" id="chatSection">
+            <h2><i class="fas fa-comments"></i> Ask Questions About the Content</h2>
+            <div class="chat-container" id="chat-messages">
+            </div>
+            <div class="chat-input-container">
+                <textarea id="question-input" 
+                         placeholder="Ask a question about the content..."
+                         rows="3"></textarea>
+                <button id="ask-button" class="ask-btn"><i class="fas fa-paper-plane"></i> Ask</button>
+            </div>
+        </div>
+
+        {% if images %}
+        <div class="image-section content-card">
+            <h2><i class="fas fa-chart-bar"></i> Related Diagrams</h2>
+            <div class="image-viewer">
+                <img id="current-image" src="{{ url_for('video.serve_image', filename=images[0]) }}" alt="Related diagram">
+                <div class="image-navigation">
+                    <button id="prev-btn" class="nav-btn"><i class="fas fa-chevron-left"></i> Previous</button>
+                    <span id="image-counter">Image 1 of {{ images|length }}</span>
+                    <button id="next-btn" class="nav-btn">Next <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>About AI Summarizer</h3>
+                <p>AI Summarizer is a cutting-edge tool designed to help you extract key information from videos and documents quickly and efficiently.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact Us</h3>
+                <p>Have questions or feedback? Reach out to us at <a href="mailto:contact@aisummarizer.com">contact@aisummarizer.com</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 AI Summarizer. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/results.js') }}"></script>
+</body>
+</html>
