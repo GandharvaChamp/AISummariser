@@ -16,7 +16,9 @@ import yt_dlp
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-temp_dir = Path("temp_images")
+# temp_dir = Path("temp_images")
+temp_dir = Path(os.getenv("TEMP", "/tmp")) / "temp_images"
+
 
 try:
     shutil.rmtree(temp_dir)
@@ -27,22 +29,16 @@ except Exception as e:
 
 temp_dir.mkdir(exist_ok=True)
 
-# Create the images directory if it doesn't exist
-images_dir = os.path.join('static', 'images')
-if not os.path.exists(images_dir):
-    os.makedirs(images_dir)
-
 PROMPT = """
 You are a YouTube video summarizer designed for Mumbai University engineering students. 
 Your task is to summarize the video transcript following the proper answer-writing format for 8-10 mark questions.
 
-### *Instructions for Summarization:* 1. *Definition:* Start with a definition of the main topic and any closely related concepts.  
-2. *Classification:* If the topic is broad, provide a *classification in a tree format* (use text-based representation like code blocks if needed).  
-3. *Explanation:* Explain the topic in a structured, *stepwise or pointwise manner* to ensure clarity.  
-4. *Diagrams:* If a diagram is necessary, Mention *"Draw a ____ Type of Diagram"* 
-5. *Merits & Demerits:* List advantages and disadvantages *if applicable*.  
-6. *Applications:* Mention real-world applications *if applicable*.    
-7. *Conclusion:* End with a brief 2-3 line conclusion summarizing the key points.  
+### **Instructions for Summarization:** 1. **Definition:** Start with a definition of the main topic and any closely related concepts.  
+2. **Classification:** If the topic is broad, provide a **classification in a tree format** (use text-based representation like code blocks if needed).  
+3. **Explanation:** Explain the topic in a structured, **stepwise or pointwise manner** to ensure clarity.  
+4. **Diagrams:** If a diagram is necessary, Mention **"Draw a ____ Type of Diagram"** 5. **Merits & Demerits:** List advantages and disadvantages **if applicable**.  
+6. **Applications:** Mention real-world applications **if applicable**.    
+7. **Conclusion:** End with a brief 2-3 line conclusion summarizing the key points.  
 """
 
 CONCISE_PROMPT = """
@@ -62,32 +58,32 @@ Please provide a concise summary of this transcript:
 PDF_PPT_PROMPT = """
 You are an educational content summarizer designed for engineering students. Analyze the provided content and create a comprehensive yet concise summary following this structure:
 
-1. *Chapter Overview:*
+1. **Chapter Overview:**
    - Main topic and its significance
    - Key concepts covered
    - Prerequisites needed
 
-2. *Topics Breakdown:*
+2. **Topics Breakdown:**
    - List main topics and subtopics
    - Show relationships between concepts
    - Highlight important terms/definitions
 
-3. *Simplified Explanations:*
+3. **Simplified Explanations:**
    - Break down complex concepts
    - Use simple language
    - Provide examples where possible
 
-4. *Key Points Summary:*
+4. **Key Points Summary:**
    - Bullet points of crucial information
    - Important formulas/equations (if any)
    - Common applications
 
-5. *Study Focus:*
+5. **Study Focus:**
    - What to concentrate on
    - Potential exam topics
    - Common misconceptions to avoid
 
-6. *Quick Revision Notes:*
+6. **Quick Revision Notes:**
    - 5-6 most important takeaways
    - Critical formulas/concepts to remember
    - Practice suggestion areas
@@ -95,7 +91,7 @@ You are an educational content summarizer designed for engineering students. Ana
 Please analyze and summarize the following content:
 """
 
-app = Flask(_name_)
+app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 
@@ -130,7 +126,7 @@ def format_content(text):
 
         text = '\n'.join(formatted_text)
 
-    text = re.sub(r'\\(.?)\\*', r'<strong>\1</strong>', text)
+    text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
 
     return text
 
@@ -141,18 +137,15 @@ def home():
         youtube_link = request.form.get('youtube_link')
         prompt_option = request.form.get('prompt_option')
         custom_prompt = request.form.get('custom_prompt', '')
+        download_media_option = request.form.get('download_media') == 'on'  # get download option
 
         if youtube_link:
             session['youtube_link'] = youtube_link
             session['prompt_option'] = prompt_option
             session['custom_prompt'] = custom_prompt
+            session['download_media'] = download_media_option  # add to session
             return redirect(url_for('process_video'))
     return render_template('index.html')
-
-
-@app.route('/about')
-def about():
-    return render_template('about.html')
 
 
 @app.route('/process_video')
@@ -160,6 +153,7 @@ def process_video():
     youtube_link = session.get('youtube_link')
     prompt_option = session.get('prompt_option')
     custom_prompt = session.get('custom_prompt', '')
+    download_media_option = session.get('download_media')  # get from session
 
     if not youtube_link:
         return "Error: No YouTube link provided."
@@ -205,12 +199,120 @@ def process_video():
                            summary=summary,
                            images=images,
                            transcript=transcript,
-                           youtube_link=youtube_link)
+                           youtube_link=youtube_link,
+                           download_media=download_media_option)  # pass download option
 
 
 @app.route('/static/temp_images/<path:filename>')
 def serve_image(filename):
     return send_from_directory('temp_images', filename)
+
+
+@app.route('/download_media/<video_id>/<media_type>')
+def download_media(video_id, media_type):
+    try:
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        downloads_dir = Path('downloads')
+        downloads_dir.mkdir(exist_ok=True)
+
+        if media_type in ['mp4', 'mp3']:
+            try:
+                output_template = str(downloads_dir / f'%(title)s_{int(time.time())}')
+
+                ydl_opts = {
+                    'format': 'best' if media_type == 'mp4' else 'bestaudio/best',
+                    'outtmpl': output_template,
+                    'quiet': True,
+                    'no_warnings': True,
+                }
+
+                if media_type == 'mp3':
+                    ydl_opts.update({
+                        'postprocessors': [{
+                            'key': 'FFmpegExtractAudio',
+                            'preferredcodec': 'mp3',
+                            'preferredquality': '192',
+                        }],
+                    })
+
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    downloaded_file = ydl.prepare_filename(info)
+
+                    if media_type == 'mp3':
+                        downloaded_file = Path(downloaded_file).with_suffix('.mp3')
+
+                    if not Path(downloaded_file).exists():
+                        return f"Failed to download {media_type}", 500
+
+                    try:
+                        return send_file(
+                            str(downloaded_file),
+                            as_attachment=True,
+                            download_name=f"{info['title']}.{media_type}",
+                            mimetype=f'video/mp4' if media_type == 'mp4' else 'audio/mp3'
+                        )
+                    finally:
+                        try:
+                            if Path(downloaded_file).exists():
+                                os.remove(downloaded_file)
+                        except Exception as e:
+                            print(f"Cleanup error: {e}")
+
+            except Exception as e:
+                print(f"{media_type.upper()} download error: {str(e)}")
+                return f"{media_type.upper()} download failed: {str(e)}", 500
+
+        elif media_type == 'thumbnail':
+            try:
+                thumbnail_urls = [
+                    f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg",
+                    f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg",
+                    f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg",
+                    f"https://img.youtube.com/vi/{video_id}/default.jpg"
+                ]
+
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+
+                for thumb_url in thumbnail_urls:
+                    response = requests.get(thumb_url, headers=headers)
+                    if response.status_code == 200:
+                        filename = f"thumbnail_{video_id}_{int(time.time())}.jpg"
+                        thumbnail_path = downloads_dir / filename
+
+                        thumbnail_path.write_bytes(response.content)
+
+                        if not thumbnail_path.exists():
+                            continue
+
+                        try:
+                            return send_file(
+                                str(thumbnail_path),
+                                as_attachment=True,
+                                download_name=f"thumbnail_{video_id}.jpg",
+                                mimetype='image/jpeg'
+                            )
+                        finally:
+                            try:
+                                if thumbnail_path.exists():
+                                    os.remove(thumbnail_path)
+                            except Exception as e:
+                                print(f"Cleanup error: {e}")
+
+                return "Could not download thumbnail", 400
+
+            except Exception as e:
+                print(f"Thumbnail download error: {str(e)}")
+                return f"Thumbnail download failed: {str(e)}", 500
+
+        else:
+            return "Invalid media type specified", 400
+
+    except Exception as e:
+        print(f"Download error: {str(e)}")
+        return f"Download failed: {str(e)}", 500
 
 
 def extract_transcript(video_id):
@@ -277,11 +379,13 @@ def process_youtube():
     youtube_link = request.form.get('youtube_link')
     prompt_option = request.form.get('prompt_option')
     custom_prompt = request.form.get('custom_prompt', '')
+    download_media_option = request.form.get('download_media') == 'on'  # get download option
 
     if youtube_link:
         session['youtube_link'] = youtube_link
         session['prompt_option'] = prompt_option
         session['custom_prompt'] = custom_prompt
+        session['download_media'] = download_media_option  # add to session
         return redirect(url_for('process_video'))
     return redirect(url_for('home'))
 
@@ -393,5 +497,5 @@ def ask_question():
         }), 500
 
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     app.run(debug=True)
